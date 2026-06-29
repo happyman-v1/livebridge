@@ -25,7 +25,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: 'latest'
+          flutter-version: '3.24.0'
 
       - name: Enable Flutter cache
         uses: actions/cache@v4
