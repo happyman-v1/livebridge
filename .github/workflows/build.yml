@@ -33,84 +33,57 @@ jobs:
           flutter-version: '3.44.4'
           channel: 'stable'
 
-      # 4. Flawless Auto-Migration Step (Converts Legacy Syntax to Modern Plugins Block)
-      - name: Ultimate Gradle & Built-in Kotlin Migration
-        shell: python
+      # 4. Isolated Auto-Migration Script (Zero YAML Indentation Conflicts)
+      - name: Create and Run Safe Migration Script
         run: |
+          cat << 'EOF' > migrate.py
           import os
           import re
 
-          print("--- Starting Advanced Gradle & Built-in Kotlin Migration ---")
+          print("--- Starting Safe Inline Gradle Migration ---")
 
-          # 1. Clean root android/build.gradle safely
+          # 1. Clean root android/build.gradle
           bg_path = 'android/build.gradle'
           if os.path.exists(bg_path):
-              print(f"Processing {bg_path}...")
               with open(bg_path, 'r') as f:
                   content = f.read()
-              
-              # Disable old legacy kotlin classpaths and versions
-              content = re.sub(r'ext\.kotlin_version\s*=\s*[\'"].*?[\'"]', '// Removed by CI Automation', content)
-              content = re.sub(r'classpath\s+[\'"]org\.jetbrains\.kotlin:kotlin-gradle-plugin:.*?[\'"]', '// Removed by CI Automation', content)
-              
+              content = re.sub(r'ext\.kotlin_version\s*=\s*[\'"].*?[\'"]', '// Removed by CI', content)
+              content = re.sub(r'classpath\s+[\'"]org\.jetbrains\.kotlin:kotlin-gradle-plugin:.*?[\'"]', '// Removed by CI', content)
               with open(bg_path, 'w') as f:
                   f.write(content)
+              print("Root build.gradle successfully patched.")
 
           # 2. Inject pluginManagement to android/settings.gradle
           sg_path = 'android/settings.gradle'
           if os.path.exists(sg_path):
-              print(f"Processing {sg_path}...")
               with open(sg_path, 'r') as f:
                   content = f.read()
-              
               if 'pluginManagement' not in content:
-                  plugin_management_block = """pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-              plugins {
-                  id "org.jetbrains.kotlin.android" version "1.9.10"
-              }
-          }
-          """
+                  plugin_management_block = "pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n    plugins {\n        id \"org.jetbrains.kotlin.android\" version \"1.9.10\"\n    }\n}\n"
                   content = plugin_management_block + content
-                  print("Successfully injected modern pluginManagement block.")
-              
-              with open(sg_path, 'w') as f:
-                  f.write(content)
+                  with open(sg_path, 'w') as f:
+                      f.write(content)
+                  print("settings.gradle successfully patched.")
 
-          # 3. Restructure android/app/build.gradle to use the mandatory 'plugins {}' DSL
+          # 3. Update app-level android/app/build.gradle safely
           app_bg_path = 'android/app/build.gradle'
           if os.path.exists(app_bg_path):
-              print(f"Processing {app_bg_path}...")
               with open(app_bg_path, 'r') as f:
                   content = f.read()
               
-              # Remove legacy apply statements that conflict with Built-in Kotlin
-              content = re.sub(r"apply plugin:\s*['\"]kotlin-android['\"]", "// Disabled by CI", content)
-              content = re.sub(r"apply plugin:\s*['\"]com\.android\.application['\"]", "// Disabled by CI", content)
-              content = re.sub(r"id\s*['\"]kotlin-android['\"]", "// Disabled by CI", content)
-
-              # Ensure a proper modern plugins block exists at the very top
-              if 'plugins {' in content:
-                  if 'org.jetbrains.kotlin.android' not in content:
-                      content = content.replace('plugins {', "plugins {\n    id 'org.jetbrains.kotlin.android'")
-                  if 'com.android.application' not in content:
-                      content = content.replace('plugins {', "plugins {\n    id 'com.android.application'")
-              else:
-                  plugins_block = """plugins {
-              id 'com.android.application'
-              id 'org.jetbrains.kotlin.android'
-          }
-          """
-                  content = plugins_block + content
+              # Standardize legacy configuration to built-in modern configuration
+              content = content.replace("apply plugin: 'kotlin-android'", "apply plugin: 'org.jetbrains.kotlin.android'")
+              content = content.replace('apply plugin: "kotlin-android"', 'apply plugin: "org.jetbrains.kotlin.android"')
+              content = content.replace("id 'kotlin-android'", "id 'org.jetbrains.kotlin.android'")
+              content = content.replace('id "kotlin-android"', 'id "org.jetbrains.kotlin.android"')
               
               with open(app_bg_path, 'w') as f:
                   f.write(content)
+              print("App build.gradle successfully patched.")
 
-          print("--- Advanced Migration Completed Successfully ---")
+          print("--- Migration Script Finished Safely ---")
+          EOF
+          python3 migrate.py
 
       # 5. Clean and fetch packages
       - name: Install dependencies
@@ -118,132 +91,6 @@ jobs:
           flutter clean
           flutter pub get
 
-      # 6. Build the production APK release securely
-      - name: Build APK Release
-        run: flutter build apk --release
-name: Flutter Automated Build & Safe Migration
-
-on:
-  push:
-    branches:
-      - main
-      - master
-  pull_request:
-    branches:
-      - main
-      - master
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Checkout the source code
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. Set up Java Environment
-      - name: Set up Java Development Kit (JDK)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      # 3. Set up Flutter Environment
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.44.4'
-          channel: 'stable'
-
-      # 4. Flawless Auto-Migration Step (Converts Legacy Syntax to Modern Plugins Block)
-      - name: Ultimate Gradle & Built-in Kotlin Migration
-        shell: python
-        run: |
-          import os
-          import re
-
-          print("--- Starting Advanced Gradle & Built-in Kotlin Migration ---")
-
-          # 1. Clean root android/build.gradle safely
-          bg_path = 'android/build.gradle'
-          if os.path.exists(bg_path):
-              print(f"Processing {bg_path}...")
-              with open(bg_path, 'r') as f:
-                  content = f.read()
-              
-              # Disable old legacy kotlin classpaths and versions
-              content = re.sub(r'ext\.kotlin_version\s*=\s*[\'"].*?[\'"]', '// Removed by CI Automation', content)
-              content = re.sub(r'classpath\s+[\'"]org\.jetbrains\.kotlin:kotlin-gradle-plugin:.*?[\'"]', '// Removed by CI Automation', content)
-              
-              with open(bg_path, 'w') as f:
-                  f.write(content)
-
-          # 2. Inject pluginManagement to android/settings.gradle
-          sg_path = 'android/settings.gradle'
-          if os.path.exists(sg_path):
-              print(f"Processing {sg_path}...")
-              with open(sg_path, 'r') as f:
-                  content = f.read()
-              
-              if 'pluginManagement' not in content:
-                  plugin_management_block = """pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-              plugins {
-                  id "org.jetbrains.kotlin.android" version "1.9.10"
-              }
-          }
-          """
-                  content = plugin_management_block + content
-                  print("Successfully injected modern pluginManagement block.")
-              
-              with open(sg_path, 'w') as f:
-                  f.write(content)
-
-          # 3. Restructure android/app/build.gradle to use the mandatory 'plugins {}' DSL
-          app_bg_path = 'android/app/build.gradle'
-          if os.path.exists(app_bg_path):
-              print(f"Processing {app_bg_path}...")
-              with open(app_bg_path, 'r') as f:
-                  content = f.read()
-              
-              # Remove legacy apply statements that conflict with Built-in Kotlin
-              content = re.sub(r"apply plugin:\s*['\"]kotlin-android['\"]", "// Disabled by CI", content)
-              content = re.sub(r"apply plugin:\s*['\"]com\.android\.application['\"]", "// Disabled by CI", content)
-              content = re.sub(r"id\s*['\"]kotlin-android['\"]", "// Disabled by CI", content)
-
-              # Ensure a proper modern plugins block exists at the very top
-              if 'plugins {' in content:
-                  if 'org.jetbrains.kotlin.android' not in content:
-                      content = content.replace('plugins {', "plugins {\n    id 'org.jetbrains.kotlin.android'")
-                  if 'com.android.application' not in content:
-                      content = content.replace('plugins {', "plugins {\n    id 'com.android.application'")
-              else:
-                  plugins_block = """plugins {
-              id 'com.android.application'
-              id 'org.jetbrains.kotlin.android'
-          }
-          """
-                  content = plugins_block + content
-              
-              with open(app_bg_path, 'w') as f:
-                  f.write(content)
-
-          print("--- Advanced Migration Completed Successfully ---")
-
-      # 5. Clean and fetch packages
-      - name: Install dependencies
-        run: |
-          flutter clean
-          flutter pub get
-
-      # 6. Build the production APK release securely
-      - name: Build APK Release
-        run: flutter build apk --release
       # 6. Build the production APK release securely
       - name: Build APK Release
         run: flutter build apk --release
