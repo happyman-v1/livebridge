@@ -15,86 +15,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. جلب الكود الحالي من الـ Repository كما هو بدون تعديل
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. تهيئة بيئة الجافا
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
+      # 3. تهيئة بيئة فلاتر بالإصدار المطلوب
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.4'
           channel: 'stable'
 
-      - name: Create and Run Safe Migration Script
-        run: |
-          cat << 'EOF' > migrate.py
-          import os
-          import re
-
-          print("--- Starting Safe Inline Gradle Migration ---")
-
-          # 1. Clean root android/build.gradle
-          bg_path = 'android/build.gradle'
-          if os.path.exists(bg_path):
-              with open(bg_path, 'r') as f:
-                  content = f.read()
-              content = re.sub(r'ext\.kotlin_version\s*=\s*[\'"].*?[\'"]', '// Removed by CI', content)
-              content = re.sub(r'classpath\s+[\'"]org\.jetbrains\.kotlin:kotlin-gradle-plugin:.*?[\'"]', '// Removed by CI', content)
-              with open(bg_path, 'w') as f:
-                  f.write(content)
-              print("Root build.gradle successfully patched.")
-
-          # 2. Inject pluginManagement to android/settings.gradle
-          sg_path = 'android/settings.gradle'
-          if os.path.exists(sg_path):
-              with open(sg_path, 'r') as f:
-                  content = f.read()
-              if 'pluginManagement' not in content:
-                  plugin_management_block = (
-                      "pluginManagement {\n"
-                      "    repositories {\n"
-                      "        google()\n"
-                      "        mavenCentral()\n"
-                      "        gradlePluginPortal()\n"
-                      "    }\n"
-                      "    plugins {\n"
-                      "        id \"org.jetbrains.kotlin.android\" version \"1.9.20\"\n"
-                      "    }\n"
-                      "}\n"
-                  )
-                  content = plugin_management_block + content
-                  with open(sg_path, 'w') as f:
-                      f.write(content)
-                  print("settings.gradle successfully patched.")
-
-          # 3. Update app-level android/app/build.gradle safely
-          app_bg_path = 'android/app/build.gradle'
-          if os.path.exists(app_bg_path):
-              with open(app_bg_path, 'r') as f:
-                  content = f.read()
-              
-              content = content.replace("apply plugin: 'kotlin-android'", "apply plugin: 'org.jetbrains.kotlin.android'")
-              content = content.replace('apply plugin: "kotlin-android"', 'apply plugin: "org.jetbrains.kotlin.android"')
-              content = content.replace("id 'kotlin-android'", "id 'org.jetbrains.kotlin.android'")
-              content = content.replace('id "kotlin-android"', 'id "org.jetbrains.kotlin.android"')
-              
-              with open(app_bg_path, 'w') as f:
-                  f.write(content)
-              print("App build.gradle successfully patched.")
-
-          print("--- Migration Script Finished Safely ---")
-          EOF
-          python3 migrate.py
-
+      # 4. تنظيف الكاش وجلب حزم الملحقات (بأمان)
       - name: Install dependencies
         run: |
           flutter clean
           flutter pub get
 
+      # 5. بناء نسخة الـ APK الرسمية اعتماداً على ملفاتك الأصلية
       - name: Build APK Release
         run: flutter build apk --release
