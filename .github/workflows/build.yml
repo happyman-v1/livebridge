@@ -15,25 +15,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the source code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Java Environment
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Set up Flutter Environment
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.4'
           channel: 'stable'
 
-      # 4. Fixed & Complete Auto-Migration Script (No Truncation)
       - name: Create and Run Safe Migration Script
         run: |
           cat << 'EOF' > migrate.py
@@ -59,17 +55,18 @@ jobs:
               with open(sg_path, 'r') as f:
                   content = f.read()
               if 'pluginManagement' not in content:
-                  plugin_management_block = """pluginManagement {
-          repositories {
-              google()
-              mavenCentral()
-              gradlePluginPortal()
-          }
-          plugins {
-              id "org.jetbrains.kotlin.android" version "1.9.20"
-          }
-      }
-      """
+                  plugin_management_block = (
+                      "pluginManagement {\n"
+                      "    repositories {\n"
+                      "        google()\n"
+                      "        mavenCentral()\n"
+                      "        gradlePluginPortal()\n"
+                      "    }\n"
+                      "    plugins {\n"
+                      "        id \"org.jetbrains.kotlin.android\" version \"1.9.20\"\n"
+                      "    }\n"
+                      "}\n"
+                  )
                   content = plugin_management_block + content
                   with open(sg_path, 'w') as f:
                       f.write(content)
@@ -81,7 +78,6 @@ jobs:
               with open(app_bg_path, 'r') as f:
                   content = f.read()
               
-              # Standardize legacy configuration to built-in modern configuration
               content = content.replace("apply plugin: 'kotlin-android'", "apply plugin: 'org.jetbrains.kotlin.android'")
               content = content.replace('apply plugin: "kotlin-android"', 'apply plugin: "org.jetbrains.kotlin.android"')
               content = content.replace("id 'kotlin-android'", "id 'org.jetbrains.kotlin.android'")
@@ -95,12 +91,10 @@ jobs:
           EOF
           python3 migrate.py
 
-      # 5. Clean and fetch packages
       - name: Install dependencies
         run: |
           flutter clean
           flutter pub get
 
-      # 6. Build the production APK release securely
       - name: Build APK Release
         run: flutter build apk --release
