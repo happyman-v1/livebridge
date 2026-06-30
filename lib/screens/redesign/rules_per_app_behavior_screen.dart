@@ -367,7 +367,7 @@ class _RulesPerAppBehaviorScreenState extends State<RulesPerAppBehaviorScreen> {
     setState(() => _busy = true);
     unawaited(LiveBridgeHaptics.confirm());
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker().pickFiles(
         type: FileType.custom,
         allowedExtensions: const <String>['json'],
         withData: true,
