@@ -1,35 +1,44 @@
-      - name: Auto-Fix FilePicker Mess & Typos
-        run: |
-          python3 -c "
-          import re
+cat << 'EOF' > fix_code.py
+import re
 
-          def fix_my_code(file_path, file_extension):
-              with open(file_path, 'r', encoding='utf-8') as f:
-                  code = f.read()
-              
-              # 1. إصلاح كلمة Import الكابيتال لو وجدت بالخطأ
-              code = re.sub(r'Import\s+[\'"]', 'import \"', code)
-              
-              # 2. تحويل استيراد المكتبة لاستخدام الـ Alias fp لمنع تضارب الأسماء
-              code = re.sub(r'import\s+[\'"]package:file_picker/file_picker\.dart[\'"];', \"import 'package:file_picker/file_picker.dart' as fp;\", code)
-              
-              # 3. صيد المجزرة والتكرار بين السطرين واستبدالها بكود نظيف ومقفل تماماً
-              pattern = r'final\s+(?:fp\.)?FilePickerResult\?\s+result\s*=\s*.*?if\s*\(result\s*==\s*null'
-              
-              clean_block = f'''final fp.FilePickerResult? result = await fp.FilePicker.platform.pickFiles(
-                  type: fp.FileType.custom,
-                  allowedExtensions: const <String>[\'{file_extension}\'],
-                  withData: true,
+def clean_rules_file():
+    path = 'lib/screens/redesign/rules_per_app_behavior_screen.dart'
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    pattern = r'final\s+FilePickerResult\?\s+result\s*=\s*await\s+FilePicker.*?if\s*\(result\s*==\s*null'
+    clean_block = """final FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const <String>['json'],
+          withData: true,
+        );
+        if (result == null"""
+    
+    content = re.sub(pattern, clean_block, content, flags=re.DOTALL)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def clean_backup_file():
+    path = 'lib/screens/redesign/settings_backup_restore_screen.dart'
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    content = content.replace("Import 'dart:async';", "import 'dart:async';")
+    
+    pattern = r'final\s+FilePickerResult\?\s+result\s*=\s*await\s+FilePicker.*?if\s*\(result\s*==\s*null'
+    clean_block = """final FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const <String>['lbst'],
+          withData: true,
                 );
-                if (result == null'''
-              
-              fixed_code = re.sub(pattern, clean_block, code, flags=re.DOTALL)
-              
-              with open(file_path, 'w', encoding='utf-8') as f:
-                  f.write(fixed_code)
-              print(f'Successfully auto-patched: {file_path}')
+        if (result == null"""
+    
+    content = re.sub(pattern, clean_block, content, flags=re.DOTALL)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
 
-          # تشغيل الإصلاح التلقائي للملفين بالامتدادات الصحيحة لكل ملف
-          fix_my_code('lib/screens/redesign/settings_backup_restore_screen.dart', 'lbst')
-          fix_my_code('lib/screens/redesign/rules_per_app_behavior_screen.dart', 'json')
-          "
+clean_rules_file()
+clean_backup_file()
+print("Files patched successfully")
+EOF
+python3 fix_code.py
