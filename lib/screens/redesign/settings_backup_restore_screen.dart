@@ -69,7 +69,7 @@ class _SettingsBackupRestoreScreenState
     unawaited(LiveBridgeHaptics.openSurface());
     setState(() => _busy = true);
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const <String>['lbst'],
         withData: true,
